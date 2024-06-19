@@ -12,7 +12,7 @@ from homeassistant.const import CONF_API_KEY, CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_WATCHED_ALBUMS
+from .const import CONF_WATCHED_ALBUMS, CONF_INTERVAL
 from .hub import ImmichHub
 
 SCAN_INTERVAL = timedelta(minutes=5)
@@ -31,14 +31,17 @@ async def async_setup_entry(
     """Set up Immich image platform."""
 
     hub = ImmichHub(
-        host=config_entry.data[CONF_HOST], api_key=config_entry.data[CONF_API_KEY]
-    )
+        host=config_entry.data[CONF_HOST], api_key=config_entry.data[CONF_API_KEY])
 
     # Create entity for random favorite image
     async_add_entities([ImmichImageFavorite(hass, hub)])
 
     # Create entities for random image from each watched album
     watched_albums = config_entry.options.get(CONF_WATCHED_ALBUMS, [])
+    interval = config_entry.options.get(CONF_INTERVAL, 300)
+
+    self.scan_interval = timedelta(seconds=interval)
+
     async_add_entities(
         [
             ImmichImageAlbum(

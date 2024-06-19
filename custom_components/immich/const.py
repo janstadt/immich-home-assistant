@@ -2,3 +2,4 @@
 
 DOMAIN = "immich"
 CONF_WATCHED_ALBUMS = "watched_albums"
+CONF_INTERVAL = "interval"

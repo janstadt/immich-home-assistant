@@ -14,15 +14,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv
 
-from .const import CONF_WATCHED_ALBUMS, DOMAIN
+from .const import CONF_WATCHED_ALBUMS, DOMAIN, CONF_INTERVAL
 from .hub import CannotConnect, ImmichHub, InvalidAuth
 
 _LOGGER = logging.getLogger(__name__)
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_HOST): str,
-        vol.Required(CONF_API_KEY): str,
+        vol.Required(CONF_HOST): cv.string,
+        vol.Required(CONF_API_KEY): cv.string,
+        val.Required(CONF_INTERVAL): cv.time_period
     }
 )
 
@@ -35,7 +36,8 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
 
     url = url_normalize(data[CONF_HOST])
     api_key = data[CONF_API_KEY]
-
+    interval = data[CONF_INTERVAL]
+    
     hub = ImmichHub(host=url, api_key=api_key)
 
     if not await hub.authenticate():
@@ -48,7 +50,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     # Return info that you want to store in the config entry.
     return {
         "title": f"{username} @ {clean_hostname}",
-        "data": {CONF_HOST: url, CONF_API_KEY: api_key},
+        "data": {CONF_HOST: url, CONF_API_KEY: api_key, CONF_INTERVAL: interval},
     }
 
 
@@ -82,7 +84,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
+        config_entry: config_entries.ConfigEntry,``
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
         return OptionsFlowHandler(config_entry)
@@ -128,8 +130,12 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 {
                     vol.Required(
                         CONF_WATCHED_ALBUMS,
-                        default=current_albums_value,
-                    ): cv.multi_select(album_map)
+                        default=current_albums_value
+                    ): cv.multi_select(album_map),
+                    vol.Required(
+                        CONF_INTERVAL,
+                        default=300
+                    ): cv.time_period_seconds
                 }
             ),
         )
